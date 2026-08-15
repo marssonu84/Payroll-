@@ -1,0 +1,47 @@
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{D3F91053-1E9B-4B7E-A8A9-9F406BD97101}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>PayrollWebApp</RootNamespace>
+    <AssemblyName>PayrollWebApp</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <UseIISExpress>true</UseIISExpress>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Web" />
+    <Reference Include="System.Web.Extensions" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Default.aspx" />
+    <Content Include="Login.aspx" />
+    <Content Include="Register.aspx" />
+    <Content Include="Employees.aspx" />
+    <Content Include="Payroll.aspx" />
+    <Content Include="Loans.aspx" />
+    <Content Include="Reports.aspx" />
+    <Content Include="Setup.aspx" />
+    <Content Include="Site.Master" />
+    <Content Include="Web.config" />
+    <Content Include="Content\site.css" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="App_Code\Db.cs" />
+    <Compile Include="App_Code\Auth.cs" />
+    <Compile Include="App_Code\Login.aspx.cs"><DependentUpon>Login.aspx</DependentUpon></Compile>
+    <Compile Include="App_Code\Register.aspx.cs"><DependentUpon>Register.aspx</DependentUpon></Compile>
+    <Compile Include="App_Code\PayrollCalculator.cs" />
+    <Compile Include="Default.aspx.cs"><DependentUpon>Default.aspx</DependentUpon></Compile>
+    <Compile Include="Employees.aspx.cs"><DependentUpon>Employees.aspx</DependentUpon></Compile>
+    <Compile Include="Payroll.aspx.cs"><DependentUpon>Payroll.aspx</DependentUpon></Compile>
+    <Compile Include="Loans.aspx.cs"><DependentUpon>Loans.aspx</DependentUpon></Compile>
+    <Compile Include="Reports.aspx.cs"><DependentUpon>Reports.aspx</DependentUpon></Compile>
+    <Compile Include="Setup.aspx.cs"><DependentUpon>Setup.aspx</DependentUpon></Compile>
+    <Compile Include="Site.Master.cs"><DependentUpon>Site.Master</DependentUpon></Compile>
+  </ItemGroup>
+</Project>

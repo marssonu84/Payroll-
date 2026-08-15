@@ -1,0 +1,65 @@
+ATTENDANCE MODULE - MANUAL INTEGRATION STEPS
+
+DO NOT apply these changes from mobile unless you are comfortable editing code. Keep a backup of the live files first.
+
+1) DATABASE (when SSMS is available)
+   Run Attendance_Setup.sql once against the same cloud database used by the Salary Management System.
+
+2) UPLOAD TWO NEW WEBSITE FILES
+   Attendance.aspx
+   Attendance.aspx.cs
+   Upload them to the same root folder where Employees.aspx and Payroll.aspx are located.
+
+3) SITE.MASTER - ADD ATTENDANCE MENU
+   Place this after Employees and before Payroll:
+
+   <% if (PayrollWebApp.Auth.HasPermission("AttendanceView")) { %>
+       <a href="Attendance.aspx">Attendance</a>
+   <% } %>
+
+4) APP_CODE/Auth.cs - ADD ATTENDANCE PERMISSIONS
+   A) In CREATE TABLE UserPermissions add:
+      AttendanceView BIT NOT NULL DEFAULT 0,
+      AttendanceImport BIT NOT NULL DEFAULT 0,
+
+   B) In the allowed permissions array inside HasPermission add:
+      "AttendanceView",
+      "AttendanceImport",
+
+   C) Existing live databases will obtain these columns from Attendance_Setup.sql.
+
+5) USER MANAGEMENT (optional but recommended)
+   Add two checkboxes to Register.aspx:
+      <asp:CheckBox ID="chkAttendanceView" runat="server" Text=" Attendance: View" />
+      <asp:CheckBox ID="chkAttendanceImport" runat="server" Text=" Attendance: Import / Process" />
+
+   Then add these fields to SavePermissions, SetChecks and ClearForm in App_Code/Register.aspx.cs.
+   Do this only after Attendance navigation is working. Admin users already get full access automatically.
+
+6) EXCEL FORMAT
+   Use Attendance_Import_Template.xlsx supplied in this conversation.
+   Employee ID in Excel means EmployeeCode from the Employees master.
+   One row = one employee on one date.
+
+7) OFFICIAL OUT TIME
+   The page deliberately requires Official OUT Time during import.
+   It is needed to calculate early departure. No OUT time has been hard-coded.
+
+8) MONTHLY CALCULATION IMPLEMENTED
+   - After 8:25 AM = Late, unless approved permission.
+   - Approved permission up to 90 minutes = Permission.
+   - More than 90 minutes late/early = 0.5 Half Day.
+   - Every 3 Lates = 1 day equivalent.
+   - Every 2 Permissions = 0.5 day equivalent.
+   - 2 Half Days = 1 day equivalent.
+   - First 1 day equivalent per calendar month is free.
+   - No carry forward.
+   - Excess leave equivalent = salary deduction days.
+   - No IN + no OUT + no approved CL = Absent = direct 1 deduction day.
+   - Sunday/declared holiday = paid holiday.
+   - Saturday = working day unless declared holiday.
+
+9) PAYROLL LINK
+   This package deliberately DOES NOT yet change Payroll.aspx.cs.
+   First verify Attendance import and monthly deduction totals. Then connect DeductionDays to Payroll Leaves.
+   This staged approach avoids changing salary calculations before attendance is verified.
