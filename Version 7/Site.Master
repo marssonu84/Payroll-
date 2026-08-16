@@ -1,0 +1,61 @@
+<%@ Master Language="C#" %>
+
+<!DOCTYPE html>
+<html>
+<head runat="server">
+    <title>
+        <asp:ContentPlaceHolder ID="PageTitleSlot" runat="server" />
+        - Salary Management
+    </title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link href="Content/site.css" rel="stylesheet" />
+</head>
+
+<body>
+
+<form id="mainForm" runat="server">
+
+    <header class="topbar">
+        <div class="topbar-inner">
+            <div>
+                <strong>CHITRA EDUCATIONAL SOCIETY</strong>
+                <span>Salary Management System</span>
+            </div>
+
+            <nav>
+                <a href="Default.aspx">Dashboard</a>
+
+                <% if (PayrollWebApp.Auth.HasPermission("EmployeesView")) { %>
+                    <a href="Employees.aspx">Employees</a>
+                <% } %>
+
+                <% if (PayrollWebApp.Auth.HasPermission("PayrollView")) { %>
+                    <a href="Payroll.aspx">Payroll</a>
+                <% } %>
+
+                <% if (PayrollWebApp.Auth.HasPermission("LoansView")) { %>
+                    <a href="Loans.aspx">Loans</a>
+                <% } %>
+
+                <% if (PayrollWebApp.Auth.HasPermission("ReportsView")) { %>
+                    <a href="Reports.aspx">Reports</a>
+                <% } %>
+
+                <% if (PayrollWebApp.Auth.IsAdmin()) { %>
+                    <a href="Register.aspx">User Management</a>
+                <% } %>
+
+                <a href="Login.aspx">Logout</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="page-content">
+        <asp:ContentPlaceHolder ID="PageBodySlot" runat="server" />
+    </main>
+
+</form>
+
+</body>
+</html>
