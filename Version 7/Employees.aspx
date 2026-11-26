@@ -167,6 +167,51 @@
 
 </div>
 
+<div class="card" id="employeeImportCard" runat="server">
+
+    <h2>Bulk Employee Upload</h2>
+
+    <p>
+        Upload employee data using the approved Excel template. Valid rows will be added
+        automatically. Rows with missing required values, invalid branches or duplicate
+        Employee Codes will be rejected and shown in the import summary.
+    </p>
+
+    <div class="toolbar">
+        <div class="field">
+            <label>Employee Excel File (.xlsx)</label>
+            <asp:FileUpload
+                runat="server"
+                ID="fuEmployees"
+                accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+        </div>
+
+        <div class="field">
+            <label>Template</label>
+            <asp:HyperLink
+                runat="server"
+                ID="lnkEmployeeTemplate"
+                CssClass="btn"
+                NavigateUrl="~/Employee_Data_Upload_Template.xlsx"
+                Text="Download Employee Template" />
+        </div>
+    </div>
+
+    <br />
+
+    <asp:Button
+        runat="server"
+        ID="btnImportEmployees"
+        Text="Import Employees from Excel"
+        CssClass="btn"
+        OnClick="btnImportEmployees_Click" />
+
+    <br /><br />
+
+    <asp:Label runat="server" ID="lblImportResult" />
+
+</div>
+
 <div class="card">
 
     <h2>Employee List</h2>
@@ -212,6 +257,17 @@
 
     </div>
 
+    <div class="toolbar" style="margin-top:15px;">
+        <asp:Button
+            runat="server"
+            ID="btnBulkDelete"
+            Text="Delete Selected Employees"
+            CssClass="btn"
+            CausesValidation="false"
+            OnClick="btnBulkDelete_Click"
+            OnClientClick="return confirm('Permanently delete all selected employees? Employees with attendance, loan or payroll history will be skipped.');" />
+    </div>
+
     <div class="tablewrap">
 
         <asp:GridView
@@ -222,6 +278,19 @@
             OnRowCommand="gvEmployees_RowCommand">
 
             <Columns>
+
+                <asp:TemplateField HeaderText="Select">
+                    <HeaderTemplate>
+                        <input type="checkbox" title="Select all visible employees" onclick="toggleEmployeeSelection(this);" />
+                    </HeaderTemplate>
+                    <ItemTemplate>
+                        <asp:CheckBox
+                            runat="server"
+                            ID="chkSelectEmployee"
+                            CssClass="employee-select"
+                            Visible='<%# PayrollWebApp.Auth.IsAdmin() %>' />
+                    </ItemTemplate>
+                </asp:TemplateField>
 
                 <asp:BoundField
                     DataField="EmployeeCode"
@@ -289,6 +358,17 @@
                             CommandName="EditEmployee"
                             CommandArgument='<%# Eval("EmployeeID") %>' />
 
+                        &nbsp;
+
+                        <asp:LinkButton
+                            runat="server"
+                            Text="Delete"
+                            CommandName="DeleteEmployee"
+                            CommandArgument='<%# Eval("EmployeeID") %>'
+                            Visible='<%# PayrollWebApp.Auth.IsAdmin() %>'
+                            CausesValidation="false"
+                            OnClientClick="return confirm('Delete this employee permanently? This is allowed only when there is no payroll, loan or attendance history.');" />
+
                     </ItemTemplate>
 
                 </asp:TemplateField>
@@ -300,5 +380,20 @@
     </div>
 
 </div>
+
+<script type="text/javascript">
+    function toggleEmployeeSelection(source) {
+        var grid = document.getElementById('<%= gvEmployees.ClientID %>');
+        if (!grid) return;
+
+        var inputs = grid.getElementsByTagName('input');
+        for (var i = 0; i < inputs.length; i++) {
+            if (inputs[i].type === 'checkbox' && inputs[i] !== source &&
+                inputs[i].id.indexOf('chkSelectEmployee') >= 0) {
+                inputs[i].checked = source.checked;
+            }
+        }
+    }
+</script>
 
 </asp:Content>

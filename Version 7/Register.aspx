@@ -3,7 +3,7 @@
 <!DOCTYPE html>
 <html>
 <head runat="server">
-    <title>User Management - Salary Management System</title>
+    <title>User Management - Vighnesh Payroll Systems</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <style>
@@ -231,8 +231,8 @@
     <div class="wrap">
 
         <div class="brand">
-            <h1>CHITRA EDUCATIONAL SOCIETY</h1>
-            <p>Salary Management System</p>
+            <h1>Vighnesh Payroll Systems</h1>
+            <p>Payroll &amp; Workforce Management</p>
         </div>
 
         <!-- CREATE / EDIT USER -->
@@ -336,6 +336,11 @@
                 </div>
 
                 <asp:CheckBox
+                    ID="chkDashboardView"
+                    runat="server"
+                    Text=" Dashboard: View" />
+
+                <asp:CheckBox
                     ID="chkEmployeesView"
                     runat="server"
                     Text=" Employees: View" />
@@ -369,6 +374,16 @@
                     ID="chkReportsView"
                     runat="server"
                     Text=" Reports: View / Download" />
+
+                <asp:CheckBox
+                    ID="chkAttendanceView"
+                    runat="server"
+                    Text=" Attendance: View" />
+
+                <asp:CheckBox
+                    ID="chkAttendanceImport"
+                    runat="server"
+                    Text=" Attendance: Import / Finalise" />
 
             </div>
 
@@ -476,7 +491,7 @@
         <!-- BACK TO DASHBOARD -->
 
         <div class="back">
-            <a href="Default.aspx">← Back to Dashboard</a>
+            <a href="Dashboard.aspx">← Back to Dashboard</a>
         </div>
 
     </div>

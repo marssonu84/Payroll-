@@ -1,0 +1,22 @@
+VIGHNESH PAYROLL - VERSION 14.7
+HYBRIDSETUP: TEST AND APPLY FULLY SEPARATED
+
+WHAT CHANGED
+1. HybridSetup.aspx and HybridSetup.aspx.cs now treat Test Connection and Apply / Save as two strictly separate steps.
+2. Test Connection only verifies reachability. It never writes Database.config and never creates a database.
+3. Apply / Save requires either:
+   - a prior successful Test for the exact same server + database combination, or
+   - the explicit "Force save" checkbox.
+4. A successful Test is remembered in ViewState for the current page session. Changing mode, server, or database clears the remembered test.
+5. Apply no longer automatically runs schema initialization. After a successful save the user is directed to Setup.aspx for schema + first administrator.
+6. UI updated with numbered buttons ("1. Test Connection", "2. Apply / Save") and a clear recommended-flow box.
+7. Local SQL Server (SSMS) path remains fully supported: Windows Authentication, SQL login, and optional "Create database if missing".
+
+UPGRADE NOTES
+- Existing encrypted Database.config files continue to work.
+- No schema or data migration is required.
+- After deploying, open HybridSetup.aspx once if you need to change the connection; otherwise no action is needed.
+
+TEST STATUS
+- Static review of the Test / Apply flow completed.
+- Full .NET Framework 4.8 compilation and live SQL Server testing should be performed on the target machine before production use.

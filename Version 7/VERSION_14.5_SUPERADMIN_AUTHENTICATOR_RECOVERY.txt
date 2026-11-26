@@ -1,0 +1,30 @@
+Vighnesh Payroll Version 14.5 - Super Admin Authenticator-Protected Recovery
+
+Changes
+- SuperAdminReset.aspx now requires the existing recovery key AND a valid Google Authenticator TOTP code or one unused TOTP backup code.
+- Authenticator verification is performed server-side using the existing RFC 6238 implementation in App_Code/Totp.cs.
+- Recovery refuses to proceed unless two-step sign-in is already enrolled for the selected Super User account.
+- Public recovery cannot enroll a new authenticator and cannot turn off two-step sign-in. This prevents recovery-key-only enrollment bypass.
+- Existing recovery-key PBKDF2 hash is preserved unchanged.
+- Existing HTTPS-only page check, no-cache/noindex headers, ViewState/session binding, and LoginThrottle database throttling are retained.
+- SuperUserRecoveryEnabled is true so the page remains available; the recovery key and authenticator are still mandatory.
+- Cloud A / Cloud B connection settings, Database.config, employee/payroll data, and other modules were not intentionally changed.
+
+Before use
+1. Sign in normally as the Super User on each cloud deployment.
+2. Open TwoStepSetup.aspx and choose Set Up For My Account.
+3. Scan the QR code with Google Authenticator and confirm using the 6-digit code.
+4. Save the one-time backup codes offline.
+5. Test the recovery page on a staging copy before relying on it.
+
+Important architecture note
+Cloud A and Cloud B currently use separate databases. Enroll authenticator separately on each deployment/database. A password reset on one cloud does not update the other cloud.
+
+Security limitation inherited from Version 14.3
+The existing Totp implementation stores TotpSecret in the Users table as plaintext. This update reuses that implementation and does not change its storage format, to avoid breaking existing enrolled users and sign-in. Protect the SQL databases and backups accordingly. Encrypting existing TOTP secrets needs a separate migration and compatibility test.
+
+Testing performed for this package
+- ZIP structure and CRC validation: see package verification report.
+- Web.config XML parsing: performed.
+- Recovery page static checks: performed (required authenticator control present; public 2FA-disable control removed).
+- Full ASP.NET/.NET Framework 4.8 compilation and live Somee/Bsite tests: not performed in this environment.

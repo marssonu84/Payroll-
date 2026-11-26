@@ -21,6 +21,10 @@
         ID="lblMsg"
         runat="server" />
 
+    <asp:HiddenField
+        ID="hfLoanID"
+        runat="server" />
+
     <div class="card">
 
         <h2>Loan Entry</h2>
@@ -93,6 +97,17 @@
             CssClass="btn"
             OnClick="btnSave_Click" />
 
+        &nbsp;
+
+        <asp:Button
+            ID="btnCancelEdit"
+            runat="server"
+            Text="Cancel Edit"
+            CssClass="btn"
+            Visible="false"
+            CausesValidation="false"
+            OnClick="btnCancelEdit_Click" />
+
     </div>
 
     <div class="card">
@@ -104,7 +119,8 @@
             <asp:GridView
                 ID="gvLoans"
                 runat="server"
-                AutoGenerateColumns="false">
+                AutoGenerateColumns="false"
+                OnRowCommand="gvLoans_RowCommand">
 
                 <Columns>
 
@@ -148,6 +164,29 @@
                     <asp:BoundField
                         DataField="Remarks"
                         HeaderText="Remarks" />
+
+                    <asp:TemplateField HeaderText="Admin Action">
+                        <ItemTemplate>
+                            <asp:LinkButton
+                                runat="server"
+                                Text="Edit"
+                                CommandName="EditLoan"
+                                CommandArgument='<%# Eval("LoanID") %>'
+                                Visible='<%# PayrollWebApp.Auth.IsAdmin() %>'
+                                CausesValidation="false" />
+
+                            &nbsp;
+
+                            <asp:LinkButton
+                                runat="server"
+                                Text="Delete"
+                                CommandName="DeleteLoan"
+                                CommandArgument='<%# Eval("LoanID") %>'
+                                Visible='<%# PayrollWebApp.Auth.IsAdmin() %>'
+                                CausesValidation="false"
+                                OnClientClick="return confirm('Delete this loan transaction? Loan balances will be recalculated. Reprocess payroll if this deduction was already included.');" />
+                        </ItemTemplate>
+                    </asp:TemplateField>
 
                 </Columns>
 

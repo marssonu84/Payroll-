@@ -4,10 +4,12 @@
 <html>
 <head runat="server">
 
-    <title>Login - Salary Management System</title>
+    <title>Sign In - Vighnesh Payroll Systems</title>
 
     <meta name="viewport"
           content="width=device-width, initial-scale=1.0" />
+
+    <!-- Google AdSense: publisher ca-pub-8404356823010331 -->
 
     <style>
 
@@ -87,6 +89,53 @@
             margin-top: 12px;
         }
 
+        .signup-divider {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #777;
+            font-size: 13px;
+            margin: 20px 0 14px;
+        }
+
+        .signup-divider:before,
+        .signup-divider:after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: #e1e5e9;
+        }
+
+        .signup-button {
+            display: block;
+            width: 100%;
+            padding: 11px;
+            border: 1px solid #007bff;
+            color: #007bff;
+            background: #ffffff;
+            border-radius: 4px;
+            box-sizing: border-box;
+            text-align: center;
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .signup-button:hover {
+            background: #f0f7ff;
+        }
+
+        .home-link { display:block; text-align:center; margin-top:14px; color:#667085; font-size:13px; text-decoration:none; }
+        .home-link:hover { color:#007bff; }
+
+        .signup-note {
+            color: #6b7280;
+            font-size: 12px;
+            line-height: 1.45;
+            text-align: center;
+            margin: 10px 0 0;
+        }
+
     </style>
 
 </head>
@@ -97,7 +146,9 @@
 
         <div class="login-container">
 
-            <h2>Login</h2>
+            <h2>Existing User Sign In</h2>
+
+            <asp:Panel ID="pnlCredentials" runat="server">
 
             <div class="form-group">
 
@@ -130,11 +181,65 @@
                 <asp:Button
                     ID="loginSubmitButton"
                     runat="server"
-                    Text="Login"
+                    Text="Sign In"
                     CssClass="login-button"
                     OnClick="btnLogin_Click" />
 
             </div>
+
+
+            <div class="signup-divider"><span>New user?</span></div>
+
+            <a class="signup-button" href="Signup.aspx">
+                Create New Account
+            </a>
+
+            <p class="signup-note">
+                New users can sign up here. Existing users should continue with the normal sign in above.
+            </p>
+
+            </asp:Panel>
+
+            <asp:Panel ID="pnlTwoStep" runat="server" Visible="false">
+
+                <h2 style="font-size:1.1rem;">Two-Step Verification</h2>
+
+                <p class="signup-note">
+                    Enter the 6-digit code from your authenticator app.
+                    If you lost your phone, enter one of your backup codes instead.
+                </p>
+
+                <div class="form-group">
+                    <label for="txtCode">Verification code</label>
+                    <input type="text"
+                           id="txtCode"
+                           runat="server"
+                           autocomplete="one-time-code"
+                           inputmode="numeric"
+                           maxlength="12"
+                           autofocus="autofocus" />
+                </div>
+
+                <div class="form-group">
+                    <asp:Button
+                        ID="btnVerify"
+                        runat="server"
+                        Text="Verify and Sign In"
+                        CssClass="login-button"
+                        OnClick="btnVerify_Click" />
+                </div>
+
+                <asp:LinkButton
+                    ID="btnBack2FA"
+                    runat="server"
+                    Text="Start over"
+                    CssClass="home-link"
+                    CausesValidation="false"
+                    OnClick="btnBack2FA_Click" />
+
+            </asp:Panel>
+
+            <a class="home-link" href="index.html">← Back to Home</a>
 
             <asp:Label
                 ID="lblSuccess"
@@ -150,5 +255,5 @@
 
     </form>
 
-</body>
+<script src="Content/visit-music-continuous.js?v=10.6.3"></script></body>
 </html>

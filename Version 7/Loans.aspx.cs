@@ -14,6 +14,10 @@ namespace PayrollWebApp
             btnSave.Visible =
                 Auth.HasPermission("LoansEdit");
 
+            btnCancelEdit.Visible =
+                Auth.IsAdmin() &&
+                !String.IsNullOrEmpty(hfLoanID.Value);
+
             if (!IsPostBack)
             {
                 txtDate.Text =
@@ -32,8 +36,9 @@ namespace PayrollWebApp
                     EmployeeID,
                     EmployeeName + ' - ' + BranchCode AS Emp
                   FROM Employees
-                  WHERE IsActive=True
-                  ORDER BY EmployeeName"
+                  WHERE IsActive=True AND TenantID=?
+                  ORDER BY EmployeeName",
+                P(Auth.CurrentTenantId())
             );
 
             ddlEmployee.DataSource = dt;
@@ -55,6 +60,11 @@ namespace PayrollWebApp
             EventArgs e)
         {
             LoadOpeningBalance();
+
+            hfLoanID.Value = "";
+            btnSave.Text = "Save Loan Entry";
+            btnCancelEdit.Visible = false;
+            ddlEmployee.Enabled = true;
 
             txtAvailed.Text = "0";
             txtDeduction.Text = "0";
@@ -78,14 +88,21 @@ namespace PayrollWebApp
                         ddlEmployee.SelectedValue
                     );
 
+                int tenantId =
+                    GetEmployeeTenantId(
+                        employeeId
+                    );
+
                 DataTable dt = Db.Query(
                     @"SELECT TOP 1
                         NetBalance
                       FROM Loans
-                      WHERE EmployeeID=?
+                      WHERE TenantID=?
+                      AND EmployeeID=?
                       ORDER BY
                         TxnDate DESC,
                         LoanID DESC",
+                    P(tenantId),
                     P(employeeId)
                 );
 
@@ -146,8 +163,14 @@ namespace PayrollWebApp
                         ddlEmployee.SelectedValue
                     );
 
+                int tenantId =
+                    GetEmployeeTenantId(
+                        employeeId
+                    );
+
                 decimal opening =
                     GetLatestBalance(
+                        tenantId,
                         employeeId
                     );
 
@@ -191,37 +214,86 @@ namespace PayrollWebApp
                     availableBalance -
                     deduction;
 
-                Db.Execute(
-                    @"INSERT INTO Loans
-                    (
-                        EmployeeID,
-                        TxnDate,
-                        OpeningBalance,
-                        LoanAvailed,
-                        Deduction,
-                        NetBalance,
-                        Remarks
-                    )
-                    VALUES
-                    (
-                        ?,?,?,?,?,?,?
-                    )",
-                    P(employeeId),
-                    P(txnDate),
-                    P(opening),
-                    P(availed),
-                    P(deduction),
-                    P(net),
-                    P(txtRemarks.Text.Trim())
-                );
+                int editingLoanId;
+                bool editing =
+                    Int32.TryParse(
+                        hfLoanID.Value,
+                        out editingLoanId
+                    ) &&
+                    editingLoanId > 0;
 
-                ShowSuccess(
-                    "Loan entry saved. Closing balance: ₹" +
-                    net.ToString("N2")
-                );
+                if (editing)
+                {
+                    Auth.RequireAdmin();
 
-                txtOpening.Text =
-                    net.ToString("0.00");
+                    Db.Execute(
+                        @"UPDATE Loans
+                          SET
+                            TenantID=?,
+                            EmployeeID=?,
+                            TxnDate=?,
+                            LoanAvailed=?,
+                            Deduction=?,
+                            Remarks=?
+                          WHERE LoanID=?",
+                        P(tenantId),
+                        P(employeeId),
+                        P(txnDate),
+                        P(availed),
+                        P(deduction),
+                        P(txtRemarks.Text.Trim()),
+                        P(editingLoanId)
+                    );
+
+                    RecalculateLoanBalances(
+                        tenantId,
+                        employeeId
+                    );
+
+                    ShowSuccess(
+                        "Loan transaction updated. Loan balances were recalculated. Reprocess payroll if this month's deduction was already processed."
+                    );
+                }
+                else
+                {
+                    Db.Execute(
+                        @"INSERT INTO Loans
+                        (
+                            TenantID,
+                            EmployeeID,
+                            TxnDate,
+                            OpeningBalance,
+                            LoanAvailed,
+                            Deduction,
+                            NetBalance,
+                            Remarks
+                        )
+                        VALUES
+                        (
+                            ?,?,?,?,?,?,?,?
+                        )",
+                        P(tenantId),
+                        P(employeeId),
+                        P(txnDate),
+                        P(opening),
+                        P(availed),
+                        P(deduction),
+                        P(net),
+                        P(txtRemarks.Text.Trim())
+                    );
+
+                    ShowSuccess(
+                        "Loan entry saved. Closing balance: ₹" +
+                        net.ToString("N2")
+                    );
+                }
+
+                hfLoanID.Value = "";
+                btnSave.Text = "Save Loan Entry";
+                btnCancelEdit.Visible = false;
+                ddlEmployee.Enabled = true;
+
+                LoadOpeningBalance();
 
                 txtAvailed.Text = "0";
                 txtDeduction.Text = "0";
@@ -238,16 +310,19 @@ namespace PayrollWebApp
         }
 
         private decimal GetLatestBalance(
+            int tenantId,
             int employeeId)
         {
             DataTable dt = Db.Query(
                 @"SELECT TOP 1
                     NetBalance
                   FROM Loans
-                  WHERE EmployeeID=?
+                  WHERE TenantID=?
+                  AND EmployeeID=?
                   ORDER BY
                     TxnDate DESC,
                     LoanID DESC",
+                P(tenantId),
                 P(employeeId)
             );
 
@@ -267,6 +342,242 @@ namespace PayrollWebApp
             );
         }
 
+        private int GetEmployeeTenantId(
+            int employeeId)
+        {
+            object tenant = Db.Scalar(
+                @"SELECT TenantID
+                  FROM Employees
+                  WHERE EmployeeID=?",
+                P(employeeId)
+            );
+
+            if (tenant == null ||
+                tenant == DBNull.Value)
+            {
+                throw new Exception(
+                    "TenantID is missing for employee ID " +
+                    employeeId.ToString() +
+                    ". Please correct the employee/tenant setup before saving the loan."
+                );
+            }
+
+            return Convert.ToInt32(
+                tenant
+            );
+        }
+
+        protected void btnCancelEdit_Click(
+            object sender,
+            EventArgs e)
+        {
+            hfLoanID.Value = "";
+            btnSave.Text = "Save Loan Entry";
+            btnCancelEdit.Visible = false;
+            ddlEmployee.Enabled = true;
+
+            txtDate.Text =
+                DateTime.Today.ToString("yyyy-MM-dd");
+
+            LoadOpeningBalance();
+
+            txtAvailed.Text = "0";
+            txtDeduction.Text = "0";
+            txtRemarks.Text = "";
+        }
+
+        protected void gvLoans_RowCommand(
+            object sender,
+            GridViewCommandEventArgs e)
+        {
+            if (e.CommandName != "EditLoan" &&
+                e.CommandName != "DeleteLoan")
+            {
+                return;
+            }
+
+            Auth.RequireAdmin();
+
+            try
+            {
+                int loanId =
+                    Convert.ToInt32(
+                        e.CommandArgument
+                    );
+
+                DataTable loan = Db.Query(
+                    @"SELECT
+                        LoanID,
+                        TenantID,
+                        EmployeeID,
+                        TxnDate,
+                        LoanAvailed,
+                        Deduction,
+                        Remarks
+                      FROM Loans
+                      WHERE LoanID=?",
+                    P(loanId)
+                );
+
+                if (loan.Rows.Count == 0)
+                {
+                    ShowError("Loan transaction not found.");
+                    return;
+                }
+
+                DataRow row = loan.Rows[0];
+
+                int tenantId =
+                    Convert.ToInt32(
+                        row["TenantID"]
+                    );
+
+                int employeeId =
+                    Convert.ToInt32(
+                        row["EmployeeID"]
+                    );
+
+                if (e.CommandName == "DeleteLoan")
+                {
+                    Db.Execute(
+                        "DELETE FROM Loans WHERE LoanID=? AND TenantID=?",
+                        P(loanId),
+                        P(Auth.CurrentTenantId())
+                    );
+
+                    RecalculateLoanBalances(
+                        tenantId,
+                        employeeId
+                    );
+
+                    ShowSuccess(
+                        "Loan transaction deleted and balances recalculated. Reprocess payroll if this transaction had already affected salary."
+                    );
+
+                    hfLoanID.Value = "";
+                    btnSave.Text = "Save Loan Entry";
+                    btnCancelEdit.Visible = false;
+                    ddlEmployee.Enabled = true;
+
+                    LoadOpeningBalance();
+                    BindLoans();
+                    return;
+                }
+
+                if (ddlEmployee.Items.FindByValue(
+                    employeeId.ToString()) != null)
+                {
+                    ddlEmployee.SelectedValue =
+                        employeeId.ToString();
+                }
+
+                hfLoanID.Value =
+                    loanId.ToString();
+
+                txtDate.Text =
+                    Convert.ToDateTime(
+                        row["TxnDate"]
+                    ).ToString("yyyy-MM-dd");
+
+                txtAvailed.Text =
+                    Convert.ToDecimal(
+                        row["LoanAvailed"]
+                    ).ToString("0.00");
+
+                txtDeduction.Text =
+                    Convert.ToDecimal(
+                        row["Deduction"]
+                    ).ToString("0.00");
+
+                txtRemarks.Text =
+                    Convert.ToString(
+                        row["Remarks"]
+                    );
+
+                btnSave.Text =
+                    "Update Loan Entry";
+
+                btnCancelEdit.Visible = true;
+                ddlEmployee.Enabled = false;
+
+                LoadOpeningBalance();
+            }
+            catch (Exception ex)
+            {
+                ShowError(ex.Message);
+            }
+        }
+
+        private void RecalculateLoanBalances(
+            int tenantId,
+            int employeeId)
+        {
+            DataTable rows = Db.Query(
+                @"SELECT
+                    LoanID,
+                    LoanAvailed,
+                    Deduction
+                  FROM Loans
+                  WHERE TenantID=?
+                  AND EmployeeID=?
+                  ORDER BY
+                    TxnDate,
+                    LoanID",
+                P(tenantId),
+                P(employeeId)
+            );
+
+            decimal running = 0m;
+
+            foreach (DataRow row in rows.Rows)
+            {
+                int loanId =
+                    Convert.ToInt32(
+                        row["LoanID"]
+                    );
+
+                decimal availed =
+                    row["LoanAvailed"] == DBNull.Value
+                        ? 0m
+                        : Convert.ToDecimal(
+                            row["LoanAvailed"]
+                        );
+
+                decimal deduction =
+                    row["Deduction"] == DBNull.Value
+                        ? 0m
+                        : Convert.ToDecimal(
+                            row["Deduction"]
+                        );
+
+                decimal opening = running;
+                decimal net =
+                    opening +
+                    availed -
+                    deduction;
+
+                if (net < 0m)
+                {
+                    throw new Exception(
+                        "The edited loan transaction creates a negative loan balance. Please correct the deduction amount."
+                    );
+                }
+
+                Db.Execute(
+                    @"UPDATE Loans
+                      SET
+                        OpeningBalance=?,
+                        NetBalance=?
+                      WHERE LoanID=?",
+                    P(opening),
+                    P(net),
+                    P(loanId)
+                );
+
+                running = net;
+            }
+        }
+
         private void BindLoans()
         {
             gvLoans.DataSource = Db.Query(
@@ -284,9 +595,13 @@ namespace PayrollWebApp
                   INNER JOIN Employees E
                     ON L.EmployeeID =
                        E.EmployeeID
+                   AND L.TenantID =
+                       E.TenantID
+                  WHERE L.TenantID=?
                   ORDER BY
                     L.TxnDate DESC,
-                    L.LoanID DESC"
+                    L.LoanID DESC",
+                P(Auth.CurrentTenantId())
             );
 
             gvLoans.DataBind();

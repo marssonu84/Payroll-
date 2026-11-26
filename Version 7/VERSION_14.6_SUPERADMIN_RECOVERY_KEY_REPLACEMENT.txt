@@ -1,0 +1,26 @@
+VIGHNESH PAYROLL - VERSION 14.6
+SUPER ADMIN RECOVERY KEY REPLACEMENT
+
+WHAT CHANGED
+1. Added SuperAdminRecoveryKey.aspx for replacing a lost recovery key.
+2. Replacement is available only to a signed-in Super Admin account.
+3. A valid Google Authenticator 6-digit code or one unused backup code is required.
+4. The old recovery key is not required for replacement when the Super Admin is signed in and proves authenticator possession.
+5. A new 256-bit random key is generated. Only its PBKDF2 password hash is stored in the active cloud database.
+6. The new plaintext key is displayed once after the database update succeeds. It is not written to application logs.
+7. The recovery page now checks the per-database replacement hash first. Before the first replacement, it continues to use the existing Web.config hash.
+8. Failed replacement attempts use the existing database-backed login throttling. A replacement audit event is attempted.
+9. Added a link from TwoStepSetup.aspx to the new replacement page.
+
+CLOUD A / CLOUD B
+The recovery-key hash is stored in each cloud's own SQL database. Replacing the key on Cloud A does not replace Cloud B's key. Repeat the process separately on each cloud if required.
+
+IMPORTANT LIMITS
+- If both the recovery key and authenticator/backup codes are lost, this page cannot perform replacement. A trusted hosting/database administrator must restore access through a controlled, out-of-band procedure.
+- The app's existing TOTP secret storage format is unchanged in this update. Protect database backups and administrator access.
+- The replacement page requires a signed-in Super Admin and an active database connection.
+
+TEST STATUS
+- ZIP integrity/CRC, Web.config XML, and static source checks should be run after packaging.
+- Full .NET Framework 4.8 compilation and live Somee/Bsite testing are not performed in this environment.
+- Deploy first to a staging/backup copy. Test on one cloud at a time and save the newly displayed key offline before leaving the page.
